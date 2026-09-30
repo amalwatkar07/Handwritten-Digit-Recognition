@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Handwritten Digit Recognition</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        /* ---------- HEADER ---------- */
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 28px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 32px;
+        }
+
+        header p {
+            margin: 8px 0 0;
+            color: #cbd5e1;
+            font-size: 15px;
+        }
+
+        /* ---------- MAIN ---------- */
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 35px auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.07);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            color: #6b7280;
+            margin-bottom: 25px;
+        }
+
+        /* ---------- CANVAS ---------- */
+
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        canvas {
+            background: black;
+            border-radius: 12px;
+            border: 3px solid #d1d5db;
+            cursor: crosshair;
+            touch-action: none;
+            width: 400px;
+            height: 400px;
+            max-width: 100%;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        button {
+            border: none;
+            border-radius: 9px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .predict-btn {
+            background: #111827;
+            color: white;
+        }
+
+        .predict-btn:hover {
+            background: #374151;
+        }
+
+        .clear-btn {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .clear-btn:hover {
+            background: #d1d5db;
+        }
+
+        /* ---------- RESULT ---------- */
+
+        .result {
+            margin-top: 25px;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .result-title {
+            color: #6b7280;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .digit {
+            font-size: 90px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #111827;
+        }
+
+        .confidence {
+            font-size: 17px;
+            color: #4b5563;
+        }
+
+        /* ---------- UPLOAD ---------- */
+
+        .upload-section {
+            border-top: 1px solid #e5e7eb;
+            margin-top: 25px;
+            padding-top: 25px;
+        }
+
+        input[type="file"] {
+            margin: 15px 0;
+            max-width: 100%;
+        }
+
+        /* ---------- INFO ---------- */
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            padding: 18px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .info-box strong {
+            display: block;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .info-box span {
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        footer {
+            text-align: center;
+            color: #9ca3af;
+            padding: 10px 20px 30px;
+            font-size: 13px;
+        }
+
+        /* ---------- MOBILE ---------- */
+
+        @media (max-width: 650px) {
+
+            header h1 {
+                font-size: 25px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            canvas {
+                width: 300px;
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Handwritten Digit Recognition</h1>
+    <p>Machine Learning • CNN • MNIST</p>
+</header>
+
+
+<div class="container">
+
+    <!-- DRAWING CARD -->
+
+    <div class="card">
+
+        <h2>Draw a Digit</h2>
+
+        <p class="description">
+            Use your mouse to draw a single digit from 0 to 9.
+        </p>
+
+        <div class="canvas-container">
+            <canvas id="drawingCanvas" width="400" height="400"></canvas>
+        </div>
+
+        <div class="buttons">
+
+            <button class="clear-btn" onclick="clearCanvas()">
+                Clear
+            </button>
+
+            <button class="predict-btn" onclick="predictCanvas()">
+                Predict Digit
+            </button>
+
+        </div>
+
+
+        <!-- RESULT -->
+
+        <div id="result" class="result" style="display: none;">
+
+            <div class="result-title">
+                Predicted Digit
+            </div>
+
+            <div id="prediction" class="digit">
+                -
+            </div>
+
+            <div class="confidence">
+                Confidence: <strong id="confidence">-</strong>%
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- UPLOAD OPTION -->
+
+    <div class="card">
+
+        <h2>Upload an Image</h2>
+
+        <p class="description">
+            You can also upload an image containing a handwritten digit.
+        </p>
+
+        <form method="POST" enctype="multipart/form-data">
+
+            <input
+                type="file"
+                name="image"
+                accept="image/*"
+                required
+            >
+
+            <br>
+
+            <button class="predict-btn" type="submit">
+                Predict Uploaded Image
+            </button>
+
+        </form>
+
+
+        {% if image_path %}
+
+        <div class="result">
+
+            <div class="result-title">
+                Uploaded Image
+            </div>
+
+            <img
+                src="/{{ image_path }}"
+                style="max-width: 250px; max-height: 250px; margin-top: 15px; border-radius: 10px;"
+            >
+
+            {% if prediction is not none %}
+
+            <div class="result-title" style="margin-top: 20px;">
+                Predicted Digit
+            </div>
+
+            <div class="digit">
+                {{ prediction }}
+            </div>
+
+            {% if confidence %}
+            <div class="confidence">
+                Confidence: <strong>{{ confidence }}</strong>%
+            </div>
+            {% endif %}
+
+            {% endif %}
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- PROJECT INFORMATION -->
+
+    <div class="card">
+
+        <h2>About the Model</h2>
+
+        <p class="description">
+            The system uses a Convolutional Neural Network (CNN)
+            trained on the MNIST handwritten digit dataset.
+        </p>
+
+        <div class="info-grid">
+
+            <div class="info-box">
+                <strong>CNN</strong>
+                <span>Machine Learning Model</span>
+            </div>
+
+            <div class="info-box">
+                <strong>MNIST</strong>
+                <span>Training Dataset</span>
+            </div>
+
+            <div class="info-box">
+                <strong>99.07%</strong>
+                <span>MNIST Test Accuracy</span>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<footer>
+    Handwritten Digit Recognition • Machine Learning Lab Project
+</footer>
+
+
+<script>
+
+    const canvas = document.getElementById("drawingCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let drawing = false;
+
+
+    // Canvas background
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+    // Drawing settings
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 22;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+
+    function getPosition(event) {
+
+        const rect = canvas.getBoundingClientRect();
+
+        return {
+            x: (event.clientX - rect.left) *
+                (canvas.width / rect.width),
+
+            y: (event.clientY - rect.top) *
+                (canvas.height / rect.height)
+        };
+    }
+
+
+    canvas.addEventListener("pointerdown", function(event) {
+
+        drawing = true;
+
+        const position = getPosition(event);
+
+        ctx.beginPath();
+        ctx.moveTo(position.x, position.y);
+
+        canvas.setPointerCapture(event.pointerId);
+    });
+
+
+    canvas.addEventListener("pointermove", function(event) {
+
+        if (!drawing) return;
+
+        const position = getPosition(event);
+
+        ctx.lineTo(position.x, position.y);
+        ctx.stroke();
+    });
+
+
+    canvas.addEventListener("pointerup", function() {
+
+        drawing = false;
+        ctx.beginPath();
+
+    });
+
+
+    canvas.addEventListener("pointerleave", function() {
+
+        if (drawing) {
+            drawing = false;
+            ctx.beginPath();
+        }
+
+    });
+
+
+    function clearCanvas() {
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        document.getElementById("result").style.display = "none";
+    }
+
+
+    async function predictCanvas() {
+
+        const imageData = canvas.toDataURL("image/png");
+
+        const response = await fetch("/predict_canvas", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json"
+            },
+
+            body: JSON.stringify({
+                image: imageData
+            })
+
+        });
+
+
+        const data = await response.json();
+
+
+        if (data.error) {
+
+            alert(data.error);
+            return;
+
+        }
+
+
+        document.getElementById("prediction").innerText =
+            data.prediction;
+
+        document.getElementById("confidence").innerText =
+            data.confidence;
+
+        document.getElementById("result").style.display =
+            "block";
+    }
+
+</script>
+
+</body>
+
+</html>
